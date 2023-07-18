@@ -1,0 +1,1250 @@
+2.0.3:
+- Fixed the player's body temperature sometimes resetting when exiting the world
+- Addressed a minor issue related to configs resetting when changing some settings (please delete the main.toml config file)
+- Addressed an issue with capabilities that caused incompatibilities with some mods
+- Different kinds of ice now affect temperature accordingly
+- Improved Hearth spreading algorithm (takes solid sides of blocks like stairs into account better)
+- The Boiler now glows when it has fuel
+- Soul Fire and Soul Campfires now cool down the player and no longer damage entities
+- Made the Nether slightly hotter by default (this will not override existing configs)
+- Fixed Serene Seasons being applied in dimensions where it shouldn't
+- Fixed "time of day" affecting temperature in dimensions where time doesn't exist
+- Instead of going to 150, the player's temperature will now visually max out at 100
+    - After 100, the readout will begin to glow as the critical temperature builds up further
+    - Mechanically, it still works the same
+- World temperature no longer affects players in creative mode
+- Fixed minor bug that would occasionally cause the world temperature to jitter
+- Added a Russian translation courtesy of @Xemay on our Discord server
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.0.3.1
+- Fixed a bug that caused Cold Sweat to spam errors into the console in some cases
+- Rebalanced temperature-emitting blocks to have a limited effect
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1 Beta 1
+- New Item: Soulfire Lamp
+    - Cools the player down when in the Nether
+    - Requires Warped or Crimson stems as fuel (temporarily; will be changed to a custom item in the future)
+- The Hearth now only consumes the necessary fuel to function
+    - If it is hot, for example, it will only use cold fuel
+    - The Hearth will not use any fuel if there are no players in the area
+    - If the temperature in the area is habitable, the Hearth will not use any fuel
+- Limited the number of total blocks the Hearth can affect to 2000
+    - This replaces the 20-block radius that it used to have
+    - increased the technical radius to 64 blocks
+    - (note that it can't actually fill the entire 64-block radius, but it can reach these distances if you make a tunnel for the hearth to spread through)
+- Leather armor now insulates based on what piece of armor it is (configurable)
+    - i.e. a leather chestplate insulates more than a leather helmet
+- Updated the Hearth's texture slightly
+- Added Polish translation by @Lifus_Crustus on our Discord server
+- Added Portuguese translation by @Joymachs and @Vellar on our Discord server
+- Fixed multiple bugs with the Hearth that would cause it to not detect ceilings or solid blocks properly
+- Fixed the /temperature command sending an incorrect message when setting another player's temperature
+
+- Technical Changes:
+    - BlockTemps and TempModifiers are now stored in a map instead of a list
+        - Massive performance uplift
+        - Easier to store/lookup elements by their ID/block
+    - Updates to TempModifiers
+        - Moved to the capabilities system
+        - Much easier to add arguments
+    - Added new events for compat mod developers to hook into:
+        - TempModifierEvent.Add
+            - Called when a TempModifier modifier is added to a player
+            - Cancellable
+            - Allows for changing arguments, enabling/disabling duplicates, and changing the modifier type
+        - TempModifierEvent.Remove
+            - Called when a TempModifier is removed from a player
+            - Cancellable
+            - Allows for changing the number of modifiers removed
+        - TempModifierEvent.Init
+            - Called when the registry of TempModifiers or BlockTemps is being built
+            - Allows for injection of custom TempModifiers and BlockTemps
+            - If you call this event manually, use getPool().flush() beforehand to prevent duplicate entries (lag)
+    - The Hearth now uses the capability system instead of NBT
+            - This should increase performance and prevent issues with the NBT data limit on some servers
+    - "fuel_items.toml" config file changes:
+        - Renamed to "item_settings.toml" to better indicate that it also includes insulation items
+        - Insulation items (for the sewing table) and armor items with innate insulation are now defined separately
+    - Added new translation keys:
+        - "entity.player.damage.freeze" (The subtitle for when the player takes cold damage) (will be added next update)
+        - "item.cold_sweat.soulfire_lamp" (The name of the Soulfire Lamp item)
+    - Fixed a bug that would sometimes cause extreme lag when searching for temperature-affecting blocks
+    - Removed some defunct recipes that would throw errors in server consoles
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1 Beta 2
+- The Soulfire Lamp no longer requires ingredients from the Nether to craft
+    - Now crafted with a Heart of the Sea
+    - Its texture has been updated accordingly
+- The Soulfire Lamp now uses ~30% less fuel
+- Water now cools you down
+    - When you get out, it takes a bit of time to warm up
+    - In cold biomes, the effect is greater, so be careful!
+    - The speed at which you warm up also depends on the world temperature
+- Added new sounds for when the player is freezing
+- Sleeping through the night now brings your temperature closer to 0
+- Using the ingame config menu on a server now changes the server's configs if the player has OP permission level 2 or higher
+- Configs on the server now properly take precedence over the player's configs
+- Fixed Icebox and Soul Campfire not cooling the area around them
+- Fixed an issue that caused the player's temperature to not be saved properly upon leaving the world
+- Fixed crash with Waterskins in the player's hotbar
+- Fixed bug that prevented some modded worn items from showing on the player's model
+- Fixed a bug that prevented the Hearth from spreading through some non-solid blocks
+- Performance improvements & bug fixes for when the player is holding a Soulfire Lamp
+- New textures for Boiler and Icebox fuel gauges
+
+- Technical Changes:
+    - Added new methods for handling TempModifiers:
+        - PlayerTemp.hasModifier():
+            - Returns true if the player has a modifier of the given type
+        - PlayerTemp.forEachModifier():
+            - Calls the given function for each modifier of the given type
+    - Changed how PlayerTemp.removeModifier() works
+        - Instead of removing all modifiers of the given class, it takes a predicate which determines which modifiers to remove
+    - Added new method for TempModifierEvent.Add: setModifier()
+        - Replaces the modifier that would have been added with the one given
+    - Renamed LeatherTempModifier to InsulationTempModifier
+    - Added new event for compat mod developers to hook into:
+        - TempModifierEvent.Tick
+            - Fired when a TempModifier's value is called
+            - Has two phases:
+                - Pre: Called before getValue() is called
+                    - Cancellable (Modifier will be skipped)
+                - Post: Called after getValue() is called
+    - When creating TempModifiers, override the getValue() method now instead of calculate()
+        - Calculate is still used when referencing the modifier's value, but it also posts to TempModifierEvent.Tick
+    - Replaced all temperature unit conversion methods with on method: MathHelperCS.convertUnits()
+        - arguments: (double) value: a double representing the temperature to convert
+                     (Unit) from: the unit to convert from (Unit is a new enum in net.momostudios.util)
+                     (Unit) to: the unit to convert to
+                     (boolean) absolute: if true, the offset of world temperature is taken into account (for example, adds 32 degrees when converting Minecraft to Fahrenheit)
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1 Beta 3
+- Switched the Soulfire Lamp holding animation to the Mixin system to improve performance/compatibility
+- Re-introduced the grace period from pre-2.0 versions
+    - The player will be given the grace effect upon respawning or entering the world for the first time
+    - "Grace" is a new potion effect that replaces Tolerance (which went unused until now!)
+    - The length is configurable (default: 5 minutes)
+    - It can also be disabled if you prefer
+- New sounds for the Soulfire Lamp when it is lit or extinguished
+- Active nether portals now give off heat in the overworld
+- The world temperature gauge now smoothly transitions to new temperatures
+- Massive performance improvements for things that affect temperature (mainly blocks, weather, and biomes)
+- Config options now appear greyed-out instead of disappearing if the player is not OP or has cheats disabled
+- Removed some blank space in Boiler & Icebox GUIs
+- Retextured the Boiler
+- Removed the ability to set min/max temperature & rate with commands
+- Fixed incorrect math for converting temperatures to/from Celsius
+- Fixed Ice Resistance Potion recipe not showing in JEI
+
+Technical Changes:
+- Added new translation key for the Grace effect: "effect.grace" (subtitle)
+- Added new translation keys for Soulfire Lamp sounds: "item.soulfire_lamp.on" & "item.soulfire_lamp.off"
+
+
+------------------------------------------------------------------------------------------------------------------------
+Release 2.1:
+- MASSIVE performance improvements (especially for the Hearth)!
+- New Item: Soulfire Lamp
+    - Cools you down when in the Nether (and nearby players, too!)
+    - Requires Warped or Crimson stems as fuel (will be changed to a custom item in the future)
+- Re-introduced the grace period from pre-2.0 versions
+    - The grace period prevents temperature-related damage for a while
+    - Everyone is given the grace effect upon respawning or entering the world for the first time
+    - "Grace" is a new potion effect that replaces Tolerance (which went unused until now!)
+    - The length is configurable (default: 5 minutes)
+    - It can also be disabled if you prefer
+- Water now cools you down
+    - When you get out, it takes a bit of time to dry off/warm up
+    - The effect is greater in cold biomes, so be careful!
+    - Dry off faster by standing somewhere hot
+- Changes to how weather affects players:
+    - Snow no longer does anything (It doesn't really make sense)
+    - Rain makes you wet, similar to how water does
+- Hearth updates:
+    - The Hearth now only consumes the necessary fuel to function
+        - If it is hot, for example, it will only use cold fuel
+        - The Hearth will only give insulation to players who need it (won't consume fuel otherwise)
+        - It now must have over 3/4 of an item's fuel value missing to consume fuel
+    - Now plays a sound when it runs out of the needed fuel type
+    - The Hearth's code is now up to 800x more efficient (~20,000-40,000ms -> ~50-200ms of lag over 60 seconds)
+- Made the Overworld slightly warmer by default (requires config reset)
+- Sleeping through the night now brings your temperature closer to 0 (divides it by 4)
+- Ice Resistance potions are now brewed with Prismarine Cystals
+- Added new sounds for freezing damage
+- Active nether portals now give off heat in the Overworld
+- The world temperature gauge now smoothly transitions to new temperatures
+- The /temperature command can no longer be used to set config settings
+- Limited the number of total blocks the Hearth can affect to 4000
+    - This is to prevent lag from tons of hearths
+- Leather armor now insulates based on what piece of armor it is (configurable)
+    - i.e. a leather chestplate insulates more than a leather helmet
+- Using the ingame config menu on a server now changes the server's configs if the player has OP permission level 2 or higher
+- Configs on the server now properly take precedence over the player's configs
+- Updated the Hearth's texture slightly
+- Retextured the Boiler
+- New textures for Boiler and Icebox fuel gauges
+- Compacted Boiler & Icebox GUIs
+
+- Added Polish translation thanks to @Lifus_Crustus on our Discord server
+- Added Portuguese translation thanks to @Joymachs and @Vellar on our Discord server
+- Updated Russian translation thanks to @Xemay on our Discord server
+
+Fixes:
+- Fixed a crash with Waterskins in the player's hotbar
+- Fixed incorrect math for converting temperatures to/from Celsius
+- Fixed Icebox and Boiler not working properly with Hoppers
+- Fixed Ice Resistance Potion recipe not showing in JEI
+- Fixed an issue that caused the player's temperature to sometimes not be saved properly upon leaving the world
+- Fixed a few bugs that made the Hearth have strange spreading behavior
+- Fixed Icebox and Soul Campfire not cooling the area around them
+- Fixed the /temperature command sending an incorrect message when setting another player's temperature
+- Fixed Hearth spawning too many particles in small spaces
+- Fixed temperature configs not working properly on servers
+
+Technical Changes:
+- BlockTemps and TempModifiers are now stored in a map instead of a list
+    - Massive performance uplift
+    - Easier to store/lookup elements by their ID/block
+- Updates to TempModifiers
+    - Moved to the capabilities system
+    - Much easier to add arguments
+    - Added new methods for handling:
+        - PlayerTemp.hasModifier():
+            - Returns true if the player has a modifier of the given type
+        - PlayerTemp.forEachModifier():
+            - Calls the given function for each modifier of the given type
+    - Changed how PlayerTemp.removeModifier() works:
+        - Instead of removing all modifiers of the given class, it takes a predicate which determines which modifiers to remove
+- Added new events for compat mod developers to hook into:
+    - TempModifierEvent.Add
+        - Called when a TempModifier modifier is added to a player
+        - Cancellable
+        - Allows for changing arguments, enabling/disabling duplicates, and changing the modifier type
+    - TempModifierEvent.Remove
+        - Called when a TempModifier is removed from a player
+        - Cancellable
+        - Allows for changing the number of modifiers removed
+    - TempModifierEvent.Init
+        - Called when the registry of TempModifiers or BlockTemps is being built
+        - Allows for injection of custom TempModifiers and BlockTemps
+        - If you call this event manually, use getPool().flush() beforehand to prevent duplicate entries (lag)
+    - TempModifierEvent.Tick
+        - Fired when a TempModifier's value is called
+        - Has two phases:
+            - Pre: Called before getValue() is called (cancellable)
+            - Post: Called after getValue() is called
+- Replaced all temperature unit conversion methods with one method: MathHelperCS.convertUnits()
+- The Hearth now uses the capability system instead of NBT
+        - This should increase performance and prevent issues with the NBT data limit on some servers
+- "fuel_items.toml" config file changes:
+    - Renamed to "item_settings.toml" to better indicate that it also includes insulation items
+    - Insulation items (for the sewing table) and armor items with innate insulation are now defined separately
+- Added new translation keys:
+    - "entity.player.damage.freeze" (The subtitle for when the player takes cold damage) (will be added next update)
+    - "item.cold_sweat.soulfire_lamp" (The name of the Soulfire Lamp item)
+- Fixed a bug that would sometimes cause extreme lag when searching for temperature-affecting blocks
+- Removed some defunct recipes that would throw errors in server consoles
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.1
+- Changed the recipe of the Soulfire Lamp to require a golden nugget at the top
+- Revised the icons for all three potion effects (some more than others)
+- The Icebox now has much clearer visual indication for when it has fuel (new particles / texture)
+- The end is now slightly warmer (it's still uninhabitable, but you can stay there a lot longer now)
+- Custom particles now respect the player's particle settings ("minimal" setting disables all custom particles)
+- You no longer have to sneak to equip a minecart with insulation
+
+- Added Chinese translation courtesy of 6371peter on GitHub
+
+Fixes:
+- Fixed shift-clicking items in a GUI not working or crashing in some cases
+- Fixed the Soulfire Lamp & Waterskins "bobbing" randomly when held
+- Fixed HUD-related crash that occurred in some rare scenarios
+- Fixed beds restoring the player's temperature without actually sleeping in it
+
+Technical Changes:
+- The Hearth no longer gives Insulation to players in habitable areas
+- The Hearth now uses block bounding box shape for spread detection (much more reliable)
+- Rebalanced block temperatures to have differing areas of effect
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.2
+- The Soulfire Lamp is now the Hellspring Lamp
+      - Nothing serious has changed, but this rework brings it into closer parity with its crafting recipe
+      - The ID has changed, but don't worry! Old worlds should update to the new ID automatically
+      - Translation keys have changed, meaning its name will default to "Hellspring Lamp" in all languages
+- Lowered the rate at which the Hearth consumes fuel
+- Added compatibility for Better Weather
+- The world temperature gauge now smooths out transitions on a per-frame basis instead of per-tick
+      - This basically just makes it smoother for higher framerates
+
+Fixes:
+- Fixed major underlying bug with armor insulation that made it not work properly
+- Fixed crash that occurs when the Hearth is near an unloaded chunk
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.3
+- The effects of temperature-emitting are now blocked if there are solid blocks in the way
+- Added config option to insulate all non-living rideable entities (so you would be insulated inside a modded plane, for example)
+- Rebalanced a lot of Overworld biome temperatures (requires deleting world-temperatures.toml)
+- Translation improvements:
+      - Some elements of the config GUI will now move around/stretch to accommodate longer words
+      - Removed a lot of repetitive translation keys & cleaned them up, making translating much easier (we've updated all existing languages)
+      - Fixed some outdated translation keys (Russian, Polish)
+      - Fixed some things in the config GUI not updating after changing the language (like ON/OFF labels)
+- Added the ability to right-click fuel items into the Boiler, Icebox, and Hearth right from your hand
+- Going into caves will now have a much more smooth/noticeable effect on temperature thanks to a much smarter (and more efficient) algorithm
+      - The amount of temperature-dampening depends on how far you are from an opening to the surface (natural light) and your y level (deeper is better)
+      - As a result of this new system, shade (kind of) helps against extreme temperatures
+- It is now possible to add temperature-affecting blocks via configs
+
+Fixes:
+- Fixed insulated minecarts dropping Minecart Insulation upon loading the world, allowing for duplication
+
+Technical Changes:
+- TempModifiers can now be queued to expire automatically by calling TempModifier#expire(int ticks) when adding it to the player
+- TempModifier#getArgument() can now accept a Class argument to cast the return value to
+- Merged PlayerTemp class into PlayerHelper class (old methods are now deprecated and will be removed in a future version)
+- WorldInfo has been changed to WorldHelper
+- Added new method to WorldHelper: schedule(Runnable runnable, int delayTicks)
+      - Queues the given Runnable to be executed on the main thread after the given delay
+- Blocks broken underground will now place cave air instead of normal are upon breaking (used for the new cave calculations)
+- Made minecarts drop the block they carrying when destroyed
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.4
+- Food items can now be configured to affect the player's body temperature when eaten
+- The "steve head" icon above the hotbar now displays the world temperature instead of the player's body temperature
+- Config files that use numbers no longer require quotes around them
+
+Fixes:
+- Fixed crash with the Hearth caused by "ConcurrentModificationException"
+- Fixed issue that made the player's temperature return to 0 very slowly in some cases
+
+Technical Changes:
+- TempModifiers are now registered with an instance instead of class reference
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.5
+-Fixed an issue that caused the two newest players on a multiplayer server to have their world temperatures "linked"
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.6
+- The dimensions in which the Hellspring Lamp works are now configurable
+- The Hearth now has a less powerful effect on the world temperature (configurable)
+
+Fixes:
+- Fixed hotbar temperature icon not working properly in Celsius mode
+- Fixed crash caused by conflicts with modded capabilities
+- Fixed TempModifiers not syncing to client
+- Fixed the top half of the Hearth being named "block.cold_sweat.hearth_top"
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.7
+- Fixed the Hellspring Lamp not working due to improper configs
+- Fixed buggy shift-click behavior in the Sewing Table
+- Fixed Water not affecting the world temperature properly in some cases
+- Fixed occasional crash when syncing the player's temperature from the server to the client in singleplayer
+- Added some more detailed explanations to some config files
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.8
+- Fixed mods with optional support (Serene Seasons, Better Weather) causing crashes when used with Cold Sweat
+- Fixed players taking temperature-related damage in spectator mode
+
+Technical Changes:
+- PlayerTemp and all its methods have been removed (deprecated since 2.1.3). Use PlayerHelper instead.
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.9-b01
+- Updated to 1.18.1
+- Updated the Hearth's model, texture, item, etc. to look more "primitive" and less like a modern machine
+- Tweaked Waterskins to show more realistic temperatures when filled
+- Inserting fuel into the Hellspring Lamp is now handled by mixins to prevent client having power over the server
+    - The client was possibly able to "spawn in" a fake fuel item, then insert it into the lantern, and the server would accept it
+
+Fixes:
+- Waterskins now properly sample the biome's temperature when being filled (this has been broken since at least 2.1)
+- Fixed Minecart Insulation being consumed when right-clicking a minecart with insulation already applied
+
+Technical Changes:
+- The Hearth no longer uses the capability system (shouldn't impact anything in-game)
+- Many of the utility classes have been re-worked or removed. This will require compat mods to be updated.
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.9-b02
+- Fixed crash caused by Serene Seasons
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.9-b03
+- Fixed various crashes that would occur during server startup
+- Fixed a rare crash that would occur when a block was removed in the world
+- Fixed bug that caused the Sewing GUI to pull its title from the wrong translation key
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.9-b04
+- Lag from various sources has been significantly reduced (up to 75% overall decrease in lag per player in the world)
+- Changed how Cold Sweat rearranges the hotbar to make it more compatible with mods that also change the hotbar
+- Updated Hearth and empty Waterskin item textures to be more distinctive
+- Increased the effective range of the Hellspring Lamp by 1.5 blocks (hopefully it's easier to share now!)
+
+Fixes:
+- Fixed the config menu not opening for some players in multiplayer
+- Fixed some text boxes in the config menu not being able to be edited
+- Fixed "Arrow of Ice Resistance" not having a translation key
+- Fixed biomes that don't exist anymore appearing in world-temperatures.toml
+- Fixed potential bug that could cause problems with multiple Hearths in the world
+- Fixed buggy behavior when walking through soul fire
+- Fixed references to "soulfire_lamp" in some files/filenames
+- Fixed some TempModifiers triggering every tick when they shouldn't on the clientside
+- Fixed TempModifiers ticking on the clientside when the game is paused
+
+Technical Changes:
+- All Temperature-related classes have been moved to a new "api" package (including TempModifiers, BlockTemps, etc.)
+- Custom events have been moved to the "api" package as well
+- Two new Temperature types have been added:
+    - HOTTEST: Controls the maximum bearable temperature for the entity
+    - COLDEST: Controls the minimum bearable temperature for the entity
+    - These are an offset applied to their respective values in the config
+    - Can be affected by TempModifiers, manipulated using PlayerHelper, etc.
+- BlockTemps can now define which blocks they are attached to in the class's constructor instead of using hasBlock()
+    - Please use this when possible, as it is dramatically faster
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.9-b05
+- The body temperature indicator now smoothly blends between stages (because it looks cool)
+- Soul fire now gives you the powder snow freezing effect when you stand in it, making it deadly again
+
+Fixes:
+- Fixed a bug that prevented body temperature from working properly
+- Fixed Soulfire not cooling down the surrounding area
+- Fixed the item name hotbar overlay interfering with other UI elements
+- Fixed some elements in the config menu not moving to accommodate longer strings of text
+
+Technical Changes:
+- Renamed PlayerHelper to TempHelper
+      - All non-temperature-related methods have been moved from TempHelper to a new PlayerHelper class
+- Events and methods for registering TempModifiers and BlockTemps have been moved/renamed to make it more intuitive
+- TempModifier arguments can now be cast in a cleaner way with type arguments
+      - ex: this.<Double>getArgument("my_argument") casts the returned argument to a double (CANNOT cast to primitives)
+      - Because of this, the old getArgument(String id, Class clazz) method has been removed
+      - This should also clear up a lot of issues with using primitives vs. classes (i.e. int vs. Integer)
+- When registering TempModifiers/BlockTemps, the event is automatically wrapped in a try/catch block that alerts the user that registration has failed
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.10-b01
+- Backported as much content as possible from 1.18.x to 1.16.5
+- Players can no longer sleep when their body temperature or the world's temperature is deadly
+- Added hover tooltips for options in the configuration menu
+- More extreme Hearth optimizations (it's about 10x faster than before, and over 1000x faster than CS 2.0)
+- Added config option to move the world temperature UI element
+- Ice Resistance now prevents damage from powder snow
+
+Translation:
+- Updated Korean translation (thanks to PixelVoxel)
+- Updated Russian translation (thanks to Xemay)
+- The new config tooltips have new corresponding translation keys
+- Messages that show when the player is prevented from sleeping have their own translation keys
+
+Fixes:
+- Fixed custom particles rendering incorrectly (1.18.x)
+- Fixed issue that caused players' world temperatures to be "linked" in multiplayer
+- Fixed crash that would occur when loading/unloading chunks (1.16.5)
+- Fixed special minecarts duplicating their contents (i.e. hopper minecarts duplicating hoppers)
+
+Technical Changes:
+- Backend parity between versions (especially for API-related things)
+- Moved some BlockTemps to the config (ice, fire, magma blocks, and some others)
+- Renamed HOTTEST and COLDEST temperature types to simply "MAX" and "MIN"
+- Moved MixinWorld (1.16.5)/MixinLevel (1.18.x) to Forge event system (might help with problems importing Cold Sweat into a workspace)
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.10-b02
+- The player's hand is now rendered in 1st person when holding the Hellspring Lamp
+- The Hellspring Lamp now works a bit differently:
+      - Instead of decreasing the world's temperature, it now increases the maximum habitable temperature to  ~135 by default
+      - No longer consumes more fuel in hotter areas
+
+Fixes:
+- Fixed crash when launching server
+- Fixed abnormal lag caused by temperature-emitting blocks
+- Fixed some items in the config menu smearing when changing window size
+- Fixed Hellspring Lamp increasing world temperature
+- Fixed Hearth/Boiler/Icebox not saving items when being unloaded or when the world is closed
+- Fixed potential lag caused by block updates
+- Fixed Hearth not recalculating radius when blocks are changed nearby (1.16.5)
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.10-b03
+- The Hearth/Boiler/Icebox now take all available fuel at once instead of one item per tick
+      - This should decrease packet congestion, increase performance, and reduce client-server desyncs
+- Optimized how UI elements are rendered to reduce lag
+
+Fixes:
+- Fixed Hearth GUI having broken name (1.18.x)
+- Fixed players not being able to return from the End
+- Fixed Cold Sweat messing with UI elements from other mods
+- Fixed TempModifiers sometimes being stored in NBT incorrectly
+- Fixed used Waterskins not stacking correctly
+- Fixed beds not exploding when used in the Nether
+
+Technical Changes:
+- Inserting fuel into the Hellspring Lamp is now handled by mixins to prevent client having power over the server (1.16.5)
+    - The client was possibly able to spawn in a fake fuel item, then insert it into the lamp and the server would accept it
+- Improved client-server temperature syncing
+      - Temperature is now only synced when there is an update, instead of every other tick
+      - Player body temperature is now synced less often, and it is smoothed out on the clientside to account for this
+      - Temperature can no longer be manually synced using setTemperature() or addTemperature() because of this system
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.10-b04
+- Added config option to revert Soul Fire back to dealing burning damage
+- Notable backend optimizations by not sending as many packets around. This should help servers a lot!
+
+Fixes:
+- Fixed the Hearth/Boiler/Icebox causing items to disappear clientside (1.18.x)
+- Fixed the Icebox taking too much fuel (1.18.x)
+- Fixed the Hearth duplicating fuel items (1.18.x)
+- Fixed the Hellspring Lamp not accepting fuel on servers
+- Fixed entity mount insulation config not working properly
+- Fixed custom sounds sometimes playing out-of-sync
+- Fixed crash when languages that use "," instead of "." as decimal places were active in-game
+- Fixed crash related to block updates in partially-loaded chunks
+- Fixed crash when Waterskins were placed in the hotbar
+- Fixed rare crash when a block was destroyed underground (1.18.x)
+- Fixed rare crash due to improper registration when blocks from CS are placed (1.18.x)
+
+Technical Changes:
+- Optimized how TempModifiers are applied/removed
+- Optimized how blocks emit temperature
+- Optimized how the Icebox/Boiler consume fuel
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.10-b05a
+- Powder snow now decreases the player's body temperature by up to -20 when inside (1.18)
+- The Hellspring Lamp item is now fire-resistant
+- Improved styling of the readout when body temperature is above 100
+- The Hearth's air particles are now enabled by default
+
+Fixes:
+- Fixed crash that occurred when getting the player's depth
+- Fixed duplication glitch with waterskins
+- Fixed BlockTemps affecting temperature inconsistently in extreme conditions
+- Fixed body/world temperature gauges rendering over chat text
+- Fixed Hellspring Lamp sometimes being twice as effective
+- Fixed fuel items giving a stack's worth of fuel
+- Fixed bug that caused players' world temperatures to be "linked" with each other (again)
+- Fixed TempModifier arguments not being loaded from NBT
+
+Technical Changes:
+- Seasonal temperatures can now be configured in world-settings.toml
+      - Seasons are broken up into 3 "sub-seasons," each with its own temperature
+      - This section of the config will be automatically generated when Serene Seasons is detected
+- Most config options for blocks/items/biomes now accept tags
+      - Marked with a '#' followed by the tag (i.e. #minecraft:logs)
+      - Can be used in place of a block/item/biome ID
+      - All blocks/items/biomes with the tag will be affected by the config option
+- Configuring custom BlockTemps is now more intuitive
+      - Merged minEffect/maxEffect into a single "maxEffect" argument
+- Most configs can now be updated by reloading the world instead of restarting the game
+      - Servers will still have to restart for values to update
+- Improved reliability of the /temperature command
+      - Works properly in command blocks
+      - Works correctly on other players
+      - Sends the correct response message
+      - Many times more efficient
+      - Respects sendCommandFeedback and logAdminCommands gamerules
+- Waterskins now preserve NBT data when used
+- Merged UI elements that had multiple image files into one image file to preserve space & clean up file structure
+      - Affected: Hellspring lamp fuel gauge, World temp. gauge, Body temp. gauge
+- UI elements are now rendered through a more efficient method (1.18)
+- Improved documentation in some config files; especially for BlockTemps
+- Improved the layout of some config files
+      - Config files will be automatically reformatted. Some data may be lost
+- Optimized how the Insulated effect works
+- Optimized how TempModifiers are applied/removed
+- Optimized how blocks affect temperature
+- Optimized how biomes affect temperature
+- Reduced the size of config-related packets, which should help with network congestion on larger servers
+- The algorithm for getting the player's depth no longer relies on cave_air blocks (1.18)
+
+Translation Changes:
+- Added Spanish (España) translation (@Criber_761 on Discord)
+- Fixed some spelling mistakes in Russian (@git-dopi on GitHub)
+- commands.cold_sweat.temperature.set.self.result (removed)
+- commands.cold_sweat.temperature.set.other.result -> commands.cold_sweat.temperature.set.single.result
+- commands.cold_sweat.temperature.set.all.result -> commands.cold_sweat.temperature.set.many.result
+- Command messages are now better suited for languages with different sentence structures
+- Removed unused translation keys in some languages
+- Split sleep prevention messages into 4 separate translation keys (world/body, hot/cold)
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.10-b05b
+- Fuel can now be extracted from the Hearth with an empty bucket
+- Gave the Boiler a slight redesign and an animated texture when lit
+- Added ambient sounds to the boiler when lit
+- The temperature of Lava is now capped at 300 degrees for balancing & performance reasons
+
+Fixes:
+- Fixed crash when toggling particles in the Hearth's GUI
+- Fixed crash when a world is loaded without a Cold Sweat-compatible mod that was previously there
+- Fixed the Hearth consuming cold fuel unnecessarily
+- Fixed temperature being slow to react in some cases
+- Fixed body temperature not working properly in some cases
+
+Technical Changes:
+- Removed some unnecessary mixins
+- Reworked TempModifiers to be more consistent and not dependent on other TempModifiers
+      - This is achieved by returning a function (Function<Temperature, Temperature>) instead of a value (Temperature)
+      - Returning a function makes its result independent of any other TempModifier's result
+- Greatly optimized the performance of temperature-affecting blocks
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.10-b05c
+- The Hellspring Lamp's functionality has been reverted to the old system
+    - That is, it directly changes the world's temperature instead of raising the maximum habitable temperature
+
+Fixes:
+- Fixed body temperature still not working properly in some cases
+- Fixed the Hearth not updating when an insulated area is blocked off
+- Fixed the Hearth's Insulation effect occasionally dropping out
+- Fixed potential duplication bug with some fuel items in the Hearth
+
+Technical Changes:
+- In small areas, the Hearth will slow its spreading algorithm down to 1/20th of the normal rate
+      - Improves performance if the Hearth is in an area smaller than 6000 blocks
+- More minor Hearth optimizations
+- Fixed TempModifiers not ticking or expiring properly
+- Changed the order in which vanilla TempModifiers are applied to prevent unwanted behavior (like seasons affecting underground players)
+- Renamed all instances of "BlockEffect" to "BlockTemp" for clarity
+- Renamed & simplified some methods in TempModifier for clarity
+- TempModifiers now store the last value they received and the last value they returned
+      - These can be used to get the temperature of a player before a certain modifier was applied (or after)
+- New method in TempHelper: getModifier()
+      - Returns the first occurrence of a TempModifier with the given class
+      - Overload method uses a predicate instead of a class
+- Fixed potentially erroneous behavior in TempHelper.addModifier() (specifically with the "replace" flag)
+- Reduced the amount of packets being sent for various clientside updates
+- Temperature#with() now takes into account modifier tickRates
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.10.1
+
+Fixes:
+- Fixed memory leak when syncing TempModifiers from server to client
+- Fixed Hearth not resetting when a block update happens nearby
+- Fixed Hearth letting the Insulated effect expire before giving it to the player again (1.18.x)
+- Fixed the Hearth giving the Insulated effect despite having the incorrect fuel type
+- Fixed the Hearth not being able to be placed on a replaceable block (snow layer, tall grass, etc.)
+- Fixed the "replace" function of addModifier() not working properly (1.18.x)
+
+Technical Changes:
+- BlockTemps defined in the config now override vanilla BlockTemps
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.10.2
+- All biomes from Biomes o' Plenty have been given custom temperatures to work better with Cold Sweat
+      - The world-settings.toml config file will need to be deleted for this change to take effect
+- Temperatures will now blend between sub-seasons in Serene Seasons on a day-by-day basis
+- All Hearths' particle visibility settings are now stored persistently per-player
+    - Might not work on servers for now
+- Biome humidity now plays a role in how the time of day affects temperature
+      - More humid biomes will have less drastic temperature shifts
+- Added a small cooldown for Waterskins to prevent spamming
+
+Fixes:
+- Fixed the Hellspring Lamp not working (1.18.x)
+- Fixed the Hearth not insulating the player from more than 1 block away (1.18.x)
+- Fixed Waterskins not working sometimes
+- Fixed body temperature ticking up/down in erratic patterns
+- Fixed changes in temperature being delayed by ~5 ticks
+- Fixed crash when destroying a minecart carrying a block (1.16.5)
+- Fixed minecarts dropping duplicate items when destroyed
+- Fixed rare crash when rendering UI elements (1.18.x)
+- Fixed the Hearth spreading to un-roofed areas in some cases
+- Fixed armor insulation not being as effective as intended
+- Fixed biome temperature calculations being incorrect
+
+Technical Changes:
+- The Hearth is now up to ~2,000% more computationally efficient than in 2.1.10.1
+    - ~2,000,000% more efficient than in 1.3.5 or 2.0
+    - It now takes 4 ms of compute time per minute vs >40,000 ms in older versions
+- schedule() is now handled by a custom task scheduler instead of Forge's event system
+    - It has also been broken up into client-side and server-side methods
+    - Otherwise, it is functionally the same
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.10.3
+- Players' Hearth particle preferences are now saved on servers
+- Refined the temperatures of some biomes (mostly from Biomes o' Plenty)
+
+Fixes:
+- Fixed some crashes related to empty/nonexistent chunks
+- Fixed the Hearth crashing the server in rare cases
+- Fixed the Hearth incorrectly detecting skylight access in some cases
+- Fixed Waterskins reaching too extreme of temperatures when being filled in intense climates
+- Fixed players' Hearth particle settings not working on servers
+
+Technical Changes:
+- The Hearth will now only reset from a block update if the Hearth's radius is occupying that position
+- Refined the algorithm that determines the intensity of time-related temperature changes
+      - A config option has been added to override this in cases where it is inaccurate ("Biome Variance" in world-settings.toml)
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.11
+- The Grace effect now shows as an icon on the top-right when it is active
+- The Insulated effect is now removed when the player is in an un-roofed area
+- Renamed Hellspring Lamp to Soulspring Lamp (the ID has changed, too, but old worlds will be automatically converted)
+- The Hearth now displays 3D boxes around the area it is affecting when the F3 debug screen is open
+      - This might severely impact performance, so a config option has been added to disable it
+- Client-only config settings are now labeled with an icon in the config menu
+
+Fixes:
+- Fixed crash when starting a server
+- Fixed crash that could occur when a minecart was broken
+- Fixed GUIs not being centered in the screen
+- Fixed error when attempting to join a server due to missing class definition
+- Fixed sub-seasonal temperatures not blending into each other correctly
+- Fixed configs loading multiple times when starting a world
+- Fixed the Hearth spreading to places it shouldn't (or not spreading to places it should)
+- Fixed tooltips not showing in the config menu when hovering over some widgets
+
+Technical Changes:
+- Removed TimeTempModifier (merged with BiomeTempModifier)
+- Config settings for biome temperature now specify the midnight and noon temperatures a biome (in other words, the "low" and "high" temperatures)
+      - Old configs will be treated as "legacy", and will still work to some extent; though it's highly advised to switch to the new system
+      - Removed the "Biome Variance" config option, as it is no longer needed
+- Centralized/streamlined how config settings are internally handled
+- Created custom block update event to more accurately detect block updates
+- Optimized the Hearth's spreading algorithm by reducing extraneous checks & using the new update event
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.1.11.1
+
+- Fixed crash due to client-only class loading on servers
+- Fixed freeze that could occur when a block update happened while the world was loading
+- Fixed the Hearth not detecting players
+- Fixed the Hearth not saving "warm-up" time when the world is closed (1.16.5)
+- Fixed the Insulation effect being removed when the player has skylight access
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b01a
+- Revamped the armor insulation system:
+      - Each piece of armor has a number of slots that can be filled with insulation
+      - A graphic of the armor's insulation will display in the item's tooltip
+      - There are now multiple types of insulation items:
+            - Leather: Provides an equal amount of hot and cold insulation
+            - Goat Fur: Provides strong cold insulation
+            - Hoglin Hide: Provides strong hot insulation
+      - Leather armor can still be sewed to armor, filling all of its insulation slots
+      - Insulation items can be combined in different ways for more specific use-cases
+      - Because there are now two types of insulation, some configs have been changed to match
+        (not deleting the old ones may cause a crash)
+      - The number of insulation slots in helmets, chestplates, leggings, and boots is now configurable
+- Goats can now be sheared to get Goat Fur
+      - Their fur will grow back after some time (15% chance to grow back every 45 seconds)
+      - Their texture has been tweaked to better incorporate this
+- Hoglins now drop Hoglin Hide when killed, in addition to their other drops
+- The Soulspring Lamp can now be fuelled by attacking an entity at full health with it
+      - This restores up to 4 fuel
+      - Does not work on entities below full health
+- When 'Shift' is held, the Soulspring Lamp's tooltip will now show a graphic of what items it can be fuelled with
+
+Fixes:
+- Fixed the Sewing Table deleting items if the player disconnects without closing the menu
+- Fixed furnaces not affecting temperature
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b01b
+- Insulation items can now be removed with Shears in the Sewing Table
+- Enchanted insulation items will now (irreversibly) transfer compatible enchantments to the armor when being sewn
+- The world temperature gauge is now much more responsive
+- Updated the Goat texture to look better when sheared
+- Changed Goats' fur growth:
+      - There is now a 2-minute minimum cooldown (configurable)
+      - After this time, it tries to grow it back every 1 minute (configurable)
+      - There is a 20% chance for this to succeed (configurable)
+
+Fixes:
+- Fixed player temperature sometimes not changing if it is at 0
+- Fixed crash related to Goats that might occur when joining the world
+- Fixed some configs being reset when any changes are made
+
+Technical Changes:
+- "Temperature" is no longer an object type
+      - All instances of Temperature have been replaced by double values
+      - Replaced "with()" with the static method "Temperature.apply()"
+      - Because all methods in Temperature are now static, the class has been merged with TempHelper (new class is named Temperature)
+- Renamed methods in TempHelper (Temperature):
+      - "getTemperature()" -> "get()"
+      - "setTemperature()" -> "set()"
+      - "addTemperature()" -> "add()"
+- The insulation system now uses capabilities instead of NBT
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b01c
+- Armor insulation configs now have better support for items with total insulation values smaller than 2
+      - Negative values work against positive values, speeding up the rate at which the player's temperature changes
+      - Added icons for partial insulation values to the armor insulation tooltip
+- Shears are no longer damaged when removing insulation from armor in creative mode
+- Waterskins now extinguish the player when used
+- Waterskins now have custom dispense behavior
+      - The dispenser pours the waterskin's contents onto players below
+      - The water's effect weakens over distance (does nothing after ~20 blocks)
+- Added a config option to disable the mod preventing sleep if the player is too hot/cold
+
+Fixes:
+- Fixed player temperature never naturally returning to 0
+- Fixed goats trying to ram players in creative mode
+
+Technical Changes:
+- TempModifiers now have a full CompoundTag attached to each instance
+      - This can be used to store any custom data that needs to be saved
+      - Replaces the old "arguments" system
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b02a
+- Added various negative effects that are inflicted on the player if they are too hot/cold:
+      - Hot (disorients the player):
+            - Reduced view distance at temperatures above 50 (less range as temperature increases)
+            - Blurred vision as temperature increases above 50
+            - Randomly drifting camera as temperature increases above 50
+      - Cold (dangerous to the player):
+            - Reduced mining/movement speed (slower as temperature decreases)
+            - Player attack knockback is reduced (less knockback as temperature decreases)
+            - Up to 50% of the player's hearts freeze over (frozen hearts cannot be regenerated)
+- Added new mob: Chameleon
+      - Spawns in tropical biomes (Like jungles)
+      - Change color according to the temperature around them (it can be a useful thermometer replacement!)
+      - It might trust you if you throw it a spider eye
+            - Chameleons can trust multiple players
+            - You can right-click a chameleon that trusts you to carry it on your head
+            - Eventually, chameleons will do other things when fed different items
+      - Occasionally, a chameleon will shed its skin, dropping the new Chameleon Molt item
+            - Chameleon molt will have important uses in future updates, so don't throw it away!
+- Items that can be used as insulation now have a tooltip displaying their effects
+- Insulation tooltips are now more clear about positive/negative insulation values
+- the Thermometer can now be equipped as a charm if Curios is installed
+- Slightly tweaked how removing insulation works to make removing multiple items more streamlined
+- Added "minecart with insulation" item
+      - Crafted with a minecart and minecart insulation
+- Retextured minecart insulation
+- Reorganized the Cold Sweat creative tab to group items more logically
+ 
+Fixes:
+- Fixed crash related to goats' stored data
+- Fixed performance issue caused by extreme amounts of block updates
+- Fixed the Soulspring Lamp sometimes not being activated/deactivated properly
+- Fixed the Soulspring Lamp starting off empty when crafted
+- Fixed blocks not being mineable with the correct tool
+- Fixed UI elements sometimes showing when the UI is supposed to be hidden and vice versa
+- Fixed goats trying to ram players in peaceful mode
+- Fixed food items configured to affect temperature being double-effective
+- Fixed insulation tooltips sometimes overlapping other tooltips
+- Fixed Soulspring Lamp tooltip not being properly sized when Shift is held and advanced tooltips are disabled
+- Items will now always burn in soul fire when the Spirit mod is installed to prevent incompatibility
+
+Technical Changes:
+- Revamped the temperature system to allow all living entities to have their own temperatures
+      - Although the system has been reworked in the backend, there is very little difference in implementation aside from some method parameters
+      - This may pave the way for livestock temperature to make a return in the future
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b03a
+* Added new block: Thermolith
+      - Outputs a redstone signal based on the temperature of the nearby area (from 0 to 15 from minimum to maximum temperature set in the config)
+      - Crafted with 3 chameleon molt and 4 terracotta
+* Chameleons can now perform new actions when fed certain items:
+      - Magma cream, nether wart, cactus: Chameleon will point towards nearest hot biome (temperature > 1.7) within 2000 blocks 1 minute
+      - Snowball, beetroot, sweet berries: Chameleon will point towards the nearest cold biome (temperature < 0.2) within 2000 blocks for 1 minute
+      - Slimeball, ink sac, cocoa beans: Chameleon will point towards the nearest humid biome (temperature > 0.8 and downfall > 0.85) within 2000 blocks for 1 minute
+      - Spider eye, fermented spider eye, fish: Heals 3 health for the chameleon
+* Added new default insulation items:
+      - Wool: 1.5 points of cold insulation, making it a half-step between leather (1) and goat fur (2)
+      - Slimeball: 1.5 points of hot insulation, making it a half-step between leather (1) and hoglin hide (2)
+      ! 'item-settings.toml' will need to be deleted for these changes to take effect
+* Added support for Armor Underwear:
+      - Simple linings now allow the player to withstand more drastic temperatures
+      - Ozzy lining adapts to the player's body temperature and makes either hot or cold environments more habitable accordingly
+      - Otto/Ollie linings will protect against freezing/burning damage respectively. Each lined armor piece reduces the damage by 25%, up to 100%
+      - Otto/Ollie linings also lessen temperature debuffs
+* Added support for Oh the Biomes You'll Go!:
+      - Rebalanced several biomes' temperatures to be more accurate in Cold Sweat's temperature system
+      - Chameleons can now spawn in BYG biomes
+      ! 'world-settings.toml' and 'entity-settings.toml' will need to be deleted for these changes to take effect
+* Added new recipe unlocks and advancements when certain criteria are met to help progression
+- Added the ability to pipe temperature-controlled air from the hearth using Create's pipes
+- Chameleons can now spawn in desert-like biomes
+- Chameleon taming items can now be configured
+- Reduced the time it takes for the chameleon to complete shedding from 1 minute to 30 seconds
+- The chameleon will now drop 1-3 chameleon molt when shedding
+- New chameleon sounds for ambient, death, and eat
+- Darkened the green chameleon texture so it isn't so washed-out
+- Fuel items for the soulspring lamp can now be configured to give different amounts of fuel
+- When a block is changed near a hearth, only the parts of the hearth's area-of-effect that stem from that block will be updated
+      - For example, if a door is closed, only the area through the door will be updated
+- Retextured the top of the sewing table to look less like a crafting table
+- The soulspring lamp can now be used more offensively, stealing up to 8 health from a target on attack. This can only be done once per entity
+
+Fixes:
+- Fixed crash when hovering over insulation items in certain cases
+- Fixed chameleon ambient/hurt sounds not following the entity's position (Vanilla Minecraft bug)
+- Fixed chameleon animations sometimes being applied to other chameleons
+- Fixed block updates not being detected by the hearth
+- Fixed reloading the world causing chameleons' shed cooldowns to be set to an extremely high negative number
+- Fixed negative temperature effects being applied when the player has fire/ice resistance or grace
+- Fixed heatstroke blur effect not persisting when perspective is changed (F5)
+- Fixed HUD elements showing/hiding being delayed when switching gamemodes
+- Fixed modded campfires not emitting heat
+- Fixed the chameleon becoming desynched if the player it is riding enters water
+- Fixed the shield's blocking animation being misaligned
+- Fixed the soulspring lamp not gaining fuel when attacking
+- Fixed camera sway at extremely hot temperature being almost negligible
+
+
+Technical Changes:
+- Entities are now given the temperature capability on an EntityType basis instead of an individual basis
+      - Prevents every entity in the world being unnecessarily scanned for the capability every tick (performance improvement)
+- TempModifier#calculate() will now be passed a Temperature.Type representing the type of temperature the modifier is attached to
+      - This means TempModifiers are now able to perform different functions depending on how they are applied (world, core, rate, etc.)
+- Added new advancement triggers related to Cold Sweat-specific events:
+      - "cold_sweat:temperature_changed":
+            - Triggered when the player's temperature changes
+            - Can discriminate based on the type of temperature being affected
+            - Can also be configured to only trigger when the temperature is within a certain range
+      - "cold_sweat:block_affects_temperature":
+            - Triggered when a nearby block affects the player's temperature
+            - Arguments for distance, block type, and the total effect this block type has had on the player
+      - "cold_sweat:soul_lamp_fueled":
+            - Triggered when the player fuels a soulspring lamp
+            - Arguments for the amount of fuel added
+      - "cold_sweat:armor_insulated":
+            - Triggered when the player equips armor with insulation
+            - Arguments for the armor item stack and insulation item stack
+            - NOT triggered when insulation is removed with shears
+- The /temperature command now works on entities
+- Added much more granular control for the order in which TempModifiers are applied:
+      - The base Temperature#addModifier() method now takes a Temperature.Addition parameter
+      - Temperature.Addition has three parameters:
+            - Relation (BEFORE, AFTER, or REPLACE)
+            - Order (FIRST, LAST)
+            - Predicate<TempModifier>
+            - The method will scan through the list of modifiers on the entity (in reverse order if Relation is LAST) and find the first modifier that matches the Predicate
+                  - It will insert the new modifier before or after this modifier, or replace it, depending on the Relation
+      - A Temperature.Addition is created like so:
+            - Temperature.Addition.of(AFTER, LAST, modifier -> modifier instanceof MyTempModifier)
+            - This example will place the newly inserter TempModifier after the last instance of MyTempModifier in the entity's list of TempModifiers
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b03b
+
+Fixes:
+* Fixed TempModifiers sometimes not being applied properly, causing temperature from certain sources to be ignored
+- Fixed TempModifiers not being synced to the client
+* Fixed attacking an entity triggering the soul stealing effect regardless of if the soulspring lamp is equipped
+* Fixed some config settings not being synced between server and client
+* Fixed goats' data not syncing on servers
+- Fixed items defined in the "Insulating Armors" config not displaying the insulation tooltip
+
+Technical Changes:
+- All configs now use a much more flexible and modular system of instantiation and syncing (you can use it too!)
+      - This creates a standard way for all configs to be synced via packets and written to the server's config files if needed
+      - Non-synced configs can also be created
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b03c
+
+Fixes:
+* Fixed crash when a chameleon does not have a biome it is actively tracking
+* Fixed goats not losing their fur after being sheared on a server, allowing for infinite fur
+- Fixed chameleons' data sometimes not being synced to clients on a server
+- Fixed chameleons eating an entire stack of items when dropped for them, instead of just 1
+- Fixed "The Pit of Fire" advancement being too difficult to complete
+- When a chameleon eats an item, all items associated with that action will now be put on cooldown
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b03d
+
+* Added support for Environmental:
+      - Adjusted the temperature of the marsh biome to be more in line with other swamp-like biomes
+      - Yak pants now provide insulation when worn
+      - Yak hair blocks can be used as an insulation item (equivalent to goat fur)
+            - For balancing purposes, it also has 1 negative heat insulation
+      ! 'world-settings.toml' and 'item-settings.toml' will need to be deleted for these changes to take effect
+* Added support for Atmospheric:
+      - Adjusted the temperatures of several biomes to be more realistic in Cold Sweat's temperature system
+      - Chameleons can now spawn in dunes and rainforest biomes from Atmospheric
+      ! 'world-settings.toml' and 'entity-settings.toml' will need to be deleted for these changes to take effect
+- Adjusted the spawn rates of goats so it is actually possible to happen upon them in the wild
+      - Can now spawn in more biomes, including those from from Biomes O' Plenty, BYG, and Atmospheric
+      ! 'entity-settings.toml' may need to be deleted for these changes to take effect
+- "The Pit of Fire" advancement now requires the player to be in the nether, surrounded by more lava
+- A Thermometer placed in an item frame will now display the exact temperature when hovered
+
+Fixes:
+* Fixed crash when navigating to page 2 of the config screen
+* Fixed crash when a chameleon with no trusted players is loaded
+* Fixed issue that prevented temperature-affecting things, like the hearth, from working properly
+      - More specifically, TempModifiers added in "REPLACE" mode were not being applied
+- Fixed entities/players always spawning with a world temperature of 32 °F or 0 °C
+- Fixed the thermometer's texture updating in GUIs where it shouldn't (in the advancement menu, for example
+- Fixed the thermometer displaying temperature incorrectly when placed in an item frame or thrown on the ground
+- Fixed thermometers stacking to 64
+
+Technical Changes:
+- Biome tags are no longer supported in configs due to tags loading very late in the game's runtime
+- Added new method getTemperatureAt(BlockPos, Level)
+        - As you probably could have guessed, this method returns the world's temperature at the given position (using Cold Sweat's default TempModifiers)
+- Added new event: EntityPickEvent
+        - Fired when the player uses pick-block (middle-click) on an entity
+        - Allows for changing the ItemStack returned
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b03e
+- Added support for Terralith biomes
+        - Adjusted the temperatures of several biomes to be more fitting in Cold Sweat's temperature system
+        ! 'world-settings.toml' will need to be deleted for these changes to take effect
+
+Translation Updates:
+- Updated Russian translation (by @Xemay on Discord)
+
+Fixes:
+- Fixed occasional crash when a block update happened in the world
+- Fixed middle-clicking an entity not working (i.e. not giving the player a spawn egg)
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b04a
+* New block: Soul Stalk
+      - Grows on soul sand and naturally generates in the Nether
+            - Grows like sugar cane, up to 6 blocks tall
+            - Grows much faster in hot environments
+      - When it grows, the new stalk will have a 50% chance to bear a soul berry
+      - The top bulb always drops a soul berry
+* New item: Soul Berry
+      - Can be eaten to restore 3 hunger points (1.5 bars)
+      - Lowers the player's body temperature by 20 degrees when eaten (effect lasts 45 seconds)
+      - Can be planted on soul sand to grow a soul stalk
+      - Can be used as an effective source of fuel for the soulspring lamp
+      ! 'item-settings.toml' will need to be deleted for this change to take effect
+* New Armor Set: Hoglin Hide
+      - Crafted with hoglin hide in typical armor patterns
+      - Each armor piece provides maximum heat insulation
+      - Cannot be insulated in the sewing table
+      - Can be used as insulation for other items (similar to leather armor)
+* New Armor Set: Goat Fur
+      - Crafted with goat fur in typical armor patterns
+      - Each armor piece provides maximum cold insulation
+      - Cannot be insulated in the sewing table
+      - Can be used as insulation for other items (similar to leather armor)
+* Chameleon molt can now be used as insulation
+      - This is a special new "adaptive" insulation item type
+            - Slowly adjusts its insulation value from hot to cold according to the player's environment
+            - This process is slow, taking about 2 minutes to fully transition from cold to hot
+      - Has the same raw insulation power as rabbit hide & wool
+- Rabbit Hide is now the mid-tier hot insulation item (instead of slimeballs)
+      ! 'item-settings.toml' will need to be deleted for this change to take effect
+- Added an advancement that unlocks the boiler & icebox recipes when the player makes a waterskin
+- Ice resistance potions are now brewed with a soul sprout instead of prismarine crystals
+
+Fixes:
+- Fixed crash when breaking special minecart types (chest, hopper, insulated, etc.)
+
+Translation Updates:
+- Added Brazilian Portuguese translation (by @Vellar on Discord)
+
+Technical Changes:
+- Block Temperatures can now be given a "predicate", which makes the block emit/not emit temperature based on its state (i.e. a campfire being lit)
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b04b
+
+Fixes:
+- Fixed items not dropping on death when killed by temperature in some cases
+- Fixed the heatstroke blur effect being applied when the player has immunity
+- Fixed inaccurate depth detection leading to unpredictable temperatures when standing near sloped surfaces
+- Fixed some visual bugs & inconsistencies when a chameleon is on the player's head
+- Fixed camera sway not starting immediately when the player's temperature is above 50
+- Fixed skins with an outer leg layer poking out through goat fur boots & hoglin hooves
+- Fixed the chameleon eating spider eyes even when at full health and the player is already trusted
+
+Technical Changes:
+- Items with both item insulation and equipment insulation (like leather armor) will show both bars if the values are different
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b04c
+- Added new sub-command for /temperature: "showmodifiers"
+      - Displays all of the temperature modifiers present on an entity, as well as how each one affects the entity's temperature
+- Potions can now be placed into the hearth's fuel slot, giving all nearby players the effect until they leave the radius or the potion expires
+- Changed the chameleon molt texture
+- Added the chameleon spawn egg to Cold Sweat's creative tab
+- Soul stalk now generates with a more even distribution throughout the Nether
+- Removed warped/crimson stems as default fuel sources for the soulspring lamp
+      ! This change will not take effect until "item-settings.toml" is deleted
+- The boiler can now be crafted with cobbled, polished, and normal deepslate
+- Smoothed out the texture of the sewing table
+- The icebox/boiler now only accept items from hoppers on the correct side
+      - Waterskins are inserted from the top, fuel is inserted at the side, and waterskins can be extracted from the bottom
+
+Fixes:
+- Fixed scheduled events sometimes crashing the game (again)
+- Fixed items with an insulation value of less than 2 not displaying or working properly
+- Fixed the insulation bar on armor items not stretching properly if the item has more than max insulation
+- Fixed adaptive insulation vales always appearing to occupy one slot
+- Fixed adaptive insulation values of more than 2 duplicating on armor
+- Fixed soul campfires not freezing the player
+- Fixed the chameleon's hitbox overlapping the player's head when mounted
+- Fixed temperature in areas of the world with 3D biomes behaving erratically
+- Fixed yak pants having different insulating properties from yak hair (Environmental)
+- Fixed the hearth allowing the Insulated effect to expire while the player is within range
+- Fixed armor insulation values above the max value being achievable under Vanilla conditions in some cases
+- Fixed the effects of the "Prevent Sleep When in Danger" config option being reversed
+
+Translation Updates:
+- Updated Chinese translation (by @wumeng on Discord)
+- Updated Brazilian Portuguese translation (by @Vellar on Discord)
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b04d
+* Added new original music track: Far Lands
+      - Plays randomly along with the Vanilla music in the Overworld
+* Added basic support for Weather, Storms & Tornadoes:
+      - Snowstorms will now drastically lower the temperature in the affected area
+      - Rain from storms is now treated like normal rain (makes the player wet)
+- Biome temperature now takes altitude into account more seriously
+      - Temperature will drop more substantially as height increases above sea level\
+- Optimized how biome & block temperature are calculated
+- Made several changes to the config menu:
+      - The Cold Sweat config button can now be repositioned on the screen (option in the config menu)
+      - Compacted & reworded some config settings to fit better in the menu
+      - Hovering over config options to show the tooltip is now more consistent
+      - Added config option to disable camera sway to the in-game config menu
+- Baby goats can no longer be sheared
+- Refined the chameleon walking animation slightly
+
+Fixes:
+- Fixed rare crash when completing the "Follow the Leader" advancement
+- Fixed rare crash due to general task scheduling issues
+- Fixed baby chameleons having improper hitbox size and appearing to be an adult
+- Fixed the difficulty slider having a missing texture
+- Fixed the config options for grace period causing the difficulty to be set to "custom" when changed
+- Fixed seasonal temperature affecting players underground if serene seasons is installed after the player spawns for the first time
+- Fixed incorrect biome temperature calculation underground
+      - More specifically, Cold Sweat's biome temperature system was never optimized for 1.18's 3D biomes, meaning all biomes were treated as if they were above-ground
+      - This would dull the temperatures of cave-like biomes as depth increases, which shouldn't happen for underground biomes
+- Fixed planting a soul sprout not granting the "A Seedy Place" advancement
+- Fixed players sometimes not dropping items on death when First Aid is installed
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b04f
+- Increased chameleon spawn rates in jungle biomes due to thick vegetation
+- Added settings to blacklist or outright disable potions from being used in the hearth
+- Milk can now be used to clear all effects from the hearth
+
+Fixes:
+- Fixed the hearth not "un-filling" the proper areas when a block is placed in some cases
+- Fixed tooltips showing insulation info when the insulation configs contain an item that doesn't exist
+- Soul stalk now only drops sticks from "middle" blocks
+      - Prevents a duplication glitch with placing/breaking a soul stalk
+      - Now only drops 0-2 sticks instead of 1-3
+
+Technical Changes:
+- Added config options to blacklist or completely disable potions from being used in the hearth
+- Added #boiler_valid and #icebox_valid tags
+      - These tags now determine what items can be placed into the top slots of the icebox & boiler
+- Added tags for items that the chameleon can eat:
+      - #chameleon/find_hot_biomes: The chameleon will locate the nearest hot biome
+      - #chameleon/find_cold_biomes: The chameleon will locate the nearest cold biome
+      - #chameleon/find_humid_biomes: The chameleon will locate the nearest humid biome
+      - #chameleon/taming: Item used to tame a chameleon
+- Added #soulspring_lamp_valid to define dimensions that the soulspring lamp will activate in
+- Updated the supported version of Create to 5.1
+- Mods that have compat but are an unsupported version will now cause the compat to disable itself instead of causing issues
+      - For example, now that the minimum version of Create is 5.1, Cold Sweat will disable its Create compat if Create is below 5.1
+- Temperature.getModifier() now returns an Optional<T extends TempModifier> instead of potential null
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b04g
+
+Fixes:
+- Fixed chunkloading deadlocks when generating a new world
+
+
+------------------------------------------------------------------------------------------------------------------------
+2.2-b04h
+* Added support for biomes from William Wyther's Overhauled Overworld (Pyrael on Discord)
+- Increased the rate at which the hearth drains fuel
+- Added a normal-duration (3:00) ice resistance potion
+    - The existing (8:00) potion is now the long-duration version (brewed with redstone)
+- Goats now drop 0-2 goat fur when killed
+- Rebalanced chameleon spawns again to make them more common in lush areas and rarer in sparse/desert-like areas
+- The player is now granted the sewing table recipe upon obtaining an insulation item
+
+Fixes:
+- Fixed the thermolith not having a preferred mining tool
+- Fixed the thermolith not dropping anything when mined
+- Fixed the hearth not draining fuel properly
+- Fixed hearth particles still spawning when "show particles" is disabled
+- Fixed the default difficulty appearing to be "Hard" despite the settings being tuned to "Normal"
+- Fixed the "Super Easy" difficulty being switched to "Easy" in some cases
+- Fixed the hearth's fuel gauges not updating when draining fuel
+- Fixed the "Biome Temperatures" and "Biome Offsets" config options being converted to MC units when world-settings.toml is (re)loaded
+- Fixed "air" becoming a valid insulation item if the configs define an insulation value for an item that doesn't exist
+- Fixed block temperature not being detected across chunk borders in some cases
+- Fixed missing subtitles for chameleon eating sounds
+- Fixed some advancements triggering under the wrong conditions
+
+Technical Changes:
+- New "HeatResistance" and "ColdResistance" NBT tags can now be applied to players for easy temperature resistance
+      - Slows the rate at which the player's temperature changes, similar to armor insulation
+      - Setting either of these values to 100 will make the player completely immune to that temperature
+* Existing armor items using the old insulation format (from pre-2.2) will now be automatically updated to the new insulation format
+      ! Note: this conversion cannot be reversed, so if you downgrade Cold Sweat again all item insulation will be lost
